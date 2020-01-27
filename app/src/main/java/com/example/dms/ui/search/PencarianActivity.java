@@ -2,11 +2,18 @@ package com.example.dms.ui.search;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -16,20 +23,36 @@ import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.example.dms.R;
+import com.example.dms.SessionManager;
+import com.example.dms.data.adapter.PencarianAdapter;
+import com.example.dms.data.model.DocumentPencarianModel;
+import com.example.dms.data.model.DocumentPencarianModelResponse;
+import com.example.dms.data.remote.Api;
+import com.example.dms.ui.detail_doc.DetailDocActivity;
+import com.example.dms.utils.AppDialog;
+import com.example.dms.utils.dialoginterface.DialogAction;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class PencarianActivity extends AppCompatActivity {
 
     SearchView search_doc;
     ImageView arrow;
-    ListView listView;
-    ArrayList<String> list;
-    ArrayAdapter<String > adapter;
+    RecyclerView listView;
+    PencarianAdapter pencarianAdapter;
+    List<DocumentPencarianModel> pencarians = new ArrayList<DocumentPencarianModel>();
+    SessionManager session;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pencarian);
+        session = new SessionManager(this);
         arrow = findViewById(R.id.arrow_back);
         arrow.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -43,47 +66,113 @@ public class PencarianActivity extends AppCompatActivity {
         search_doc.setQueryHint("Cari...");
 
         listView = findViewById(R.id.lv1);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        listView.setLayoutManager(layoutManager);
+        listView.addOnItemTouchListener(new RecyclerTouchListener(PencarianActivity.this, listView, new ClickListener() {
+            @Override
+            public void onClick(View view, int position) {
+                DocumentPencarianModel pencarian = pencarians.get(position);
+                Intent intent = new Intent(PencarianActivity.this, DetailDocActivity.class);
+                intent.putExtra("idDoc", pencarian.getDocumentId().toString());
+                startActivity(intent);
+            }
 
-        list = new ArrayList<>();
-        list.add("Surat Pajak");
-        list.add("Surat");
-        list.add("surat");
-        list.add("Document Project");
-        list.add("Document");
-        list.add("document");
-        list.add("Document Prasyarat");
-        list.add("Document Prasyarat1");
-        list.add("Document Prasyarat2");
-        list.add("Document Prasyarat3");
-        list.add("Document Prasyarat4");
+            @Override
+            public void onLongClick(View view, int position) {
 
-        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1,list);
-//        listView.setAdapter(adapter);
-
+            }
+        }));
         search_doc.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-
-                if(list.contains(query)){
-                    adapter.getFilter().filter(query);
-                    listView.setAdapter(adapter);
-                }else{
-                    Toast.makeText(PencarianActivity.this, "No Match found",Toast.LENGTH_LONG).show();
-                }
+                pencarianDoc(query);
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                //    adapter.getFilter().filter(newText);
-                if (newText.length() > 0) {
-                    listView.setAdapter(adapter);
-                } else {
-                    listView.setVisibility(View.GONE);
-                }
+                pencarianDoc(newText);
                 return false;
             }
         });
+
+    }
+
+    public void pencarianDoc(String key) {
+        Api.getService().getPencarian("Bearer " + session.getUserId(), "application/json", key).enqueue(new Callback<DocumentPencarianModelResponse>() {
+            @Override
+            public void onResponse(Call<DocumentPencarianModelResponse> call, Response<DocumentPencarianModelResponse> response) {
+                pencarians = response.body().getData();
+                if (response.body().getData().size() <= 0) {
+                    listView.setVisibility(View.GONE);
+//                    AppDialog.dialogGeneral(PencarianActivity.this, "Data pencarian tidak ada", new DialogAction() {
+//                        @Override
+//                        public void okClick(DialogInterface dialog) {
+//                            dialog.dismiss();
+//                        }
+//                    });
+                } else {
+                    listView.setVisibility(View.VISIBLE);
+                    pencarianAdapter = new PencarianAdapter(PencarianActivity.this, response.body().getData());
+                    listView.setAdapter(pencarianAdapter);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DocumentPencarianModelResponse> call, Throwable t) {
+
+            }
+        });
+    }
+
+    public interface ClickListener {
+        void onClick(View view, int position);
+
+        void onLongClick(View view, int position);
+    }
+
+    public static class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
+
+        private GestureDetector gestureDetector;
+        private ClickListener clickListener;
+
+        public RecyclerTouchListener(Context context, final RecyclerView recyclerView, final ClickListener clickListener) {
+            this.clickListener = clickListener;
+            gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+                @Override
+                public boolean onSingleTapUp(MotionEvent e) {
+                    return true;
+                }
+
+                @Override
+                public void onLongPress(MotionEvent e) {
+                    View child = recyclerView.findChildViewUnder(e.getX(), e.getY());
+                    if (child != null && clickListener != null) {
+                        clickListener.onLongClick(child, recyclerView.getChildPosition(child));
+                    }
+                }
+            });
+        }
+
+
+        @Override
+        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+
+            View child = rv.findChildViewUnder(e.getX(), e.getY());
+            if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
+                clickListener.onClick(child, rv.getChildPosition(child));
+            }
+            return false;
+        }
+
+        @Override
+        public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+        }
+
+        @Override
+        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
+        }
     }
 
 }

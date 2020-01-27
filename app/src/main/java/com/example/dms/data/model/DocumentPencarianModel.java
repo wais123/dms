@@ -3,7 +3,7 @@ package com.example.dms.data.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class DocumentModel {
+public class DocumentPencarianModel {
     @SerializedName("document_id")
     @Expose
     private Integer documentId;
@@ -92,5 +92,4 @@ public class DocumentModel {
     public void setDocumentCreateAt(String documentCreateAt) {
         this.documentCreateAt = documentCreateAt;
     }
-
 }

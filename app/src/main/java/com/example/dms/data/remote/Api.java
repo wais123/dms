@@ -11,66 +11,87 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class Api {
-    private static final String BASE_URL = "https://beskem.mozaik.id/";
+    private static final String BASE_URL = "https://dms.sandbox.idetree.com/api/";
 
-    private static Api instance = new Api();
+    public static ServiceApi getService(){
+        Gson gson = new GsonBuilder().serializeNulls().create();
 
-    public static Api getInstance(){
-        return instance;
-    }
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-    public Retrofit getRetrofit(GsonConverterFactory gcf){
-        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss")
-                .setLenient()
-                .create();
-
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient.Builder httpClient = new OkHttpClient.Builder().
-                connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS);
-        httpClient.addInterceptor(logging);
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .build();
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .addConverterFactory(gcf)
-                .client(httpClient.build())
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(okHttpClient)
                 .build();
 
-        return retrofit;
+        ServiceApi apiInterface = retrofit.create(ServiceApi.class);
+
+        return apiInterface;
     }
 
-    public <S> S createService(Class<S> serviceClass, GsonConverterFactory gcf){
-        return getRetrofit(gcf)
-                .create(serviceClass);
-    }
-    public Retrofit getRetrofitDev(GsonConverterFactory gcf){
-        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss")
-                .setLenient()
-                .create();
-
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        OkHttpClient.Builder httpClient = new OkHttpClient.Builder().
-                connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS);
-        httpClient.addInterceptor(logging);
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(gcf)
-                .client(httpClient.build())
-                .build();
-
-        return retrofit;
-    }
-
-    public <S> S createServiceCustom(Class<S> serviceClass, GsonConverterFactory gcf){
-        return getRetrofitDev(gcf)
-                .create(serviceClass);
-    }
+//    private static Api instance = new Api();
+//
+//    public static Api getInstance(){
+//        return instance;
+//    }
+//
+//    public Retrofit getRetrofit(GsonConverterFactory gcf){
+//        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss")
+//                .setLenient()
+//                .create();
+//
+//        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+//        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+//
+//        OkHttpClient.Builder httpClient = new OkHttpClient.Builder().
+//                connectTimeout(30, TimeUnit.SECONDS)
+//                .writeTimeout(30, TimeUnit.SECONDS)
+//                .readTimeout(30, TimeUnit.SECONDS);
+//        httpClient.addInterceptor(logging);
+//
+//        Retrofit retrofit = new Retrofit.Builder()
+//                .baseUrl(BASE_URL)
+//                .addConverterFactory(gcf)
+//                .client(httpClient.build())
+//                .build();
+//
+//        return retrofit;
+//    }
+//
+//    public <S> S createService(Class<S> serviceClass, GsonConverterFactory gcf){
+//        return getRetrofit(gcf)
+//                .create(serviceClass);
+//    }
+//    public Retrofit getRetrofitDev(GsonConverterFactory gcf){
+//        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss")
+//                .setLenient()
+//                .create();
+//
+//        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+//        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+//
+//        OkHttpClient.Builder httpClient = new OkHttpClient.Builder().
+//                connectTimeout(30, TimeUnit.SECONDS)
+//                .writeTimeout(30, TimeUnit.SECONDS)
+//                .readTimeout(30, TimeUnit.SECONDS);
+//        httpClient.addInterceptor(logging);
+//
+//        Retrofit retrofit = new Retrofit.Builder()
+//                .baseUrl(BASE_URL)
+//                .addConverterFactory(gcf)
+//                .client(httpClient.build())
+//                .build();
+//
+//        return retrofit;
+//    }
+//
+//    public <S> S createServiceCustom(Class<S> serviceClass, GsonConverterFactory gcf){
+//        return getRetrofitDev(gcf)
+//                .create(serviceClass);
+//    }
 }
